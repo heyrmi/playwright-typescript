@@ -1,0 +1,87 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    groups:
+      playwright:
+        patterns:
+          - "@playwright/*"
+          - "playwright"
+      typescript:
+        patterns:
+          - "typescript"
+          - "@types/*"
+          - "typescript-eslint"
+          - "@typescript-eslint/*"
+      eslint:
+        patterns:
+          - "eslint*"
+          - "@eslint/*"
+      testing:
+        patterns:
+          - "allure-playwright"
+          - "ortoni-report"
+          - "@axe-core/playwright"
+          - "lighthouse"
+      utilities:
+        patterns:
+          - "rimraf"
+          - "winston"
+          - "exceljs"
+          - "pdfjs-dist-es5"
+          - "crypto-js"
+          - "pg"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+
+    # Ignore specific dependencies if needed (uncomment and modify as needed)
+    # ignore:
+    #   - dependency-name: "package-name"
+    #     update-types: ["version-update:semver-major"]
+
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "automated"
+    reviewers:
+      - "heyrmi"
+    milestone: 1
+    rebase-strategy: "auto"
+    versioning-strategy: "increase"
+
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    labels:
+      - "github-actions"
+      - "dependencies"
+      - "automated"
+    reviewers:
+      - "heyrmi"
+    milestone: 1
+    rebase-strategy: "auto"
+    versioning-strategy: "increase"

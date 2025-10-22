@@ -1,0 +1,159 @@
+name: Dependabot Auto Merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+jobs:
+  # Check if this is a Dependabot PR
+  check-dependabot:
+    runs-on: ubuntu-latest
+    outputs:
+      is-dependabot: ${{ steps.check.outputs.is-dependabot }}
+    steps:
+      - name: Check if PR is from Dependabot
+        id: check
+        run: |
+          if [ "${{ github.actor }}" = "dependabot[bot]" ]; then
+            echo "is-dependabot=true" >> $GITHUB_OUTPUT
+          else
+            echo "is-dependabot=false" >> $GITHUB_OUTPUT
+          fi
+
+  # Run tests for Dependabot PRs
+  test:
+    needs: check-dependabot
+    if: needs.check-dependabot.outputs.is-dependabot == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Use the PR's head commit
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run TypeScript compilation check
+        run: npx tsc --noEmit
+
+      - name: Run Playwright tests
+        run: npx playwright test
+        env:
+          ENV: staging
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-${{ github.event.pull_request.number }}
+          path: |
+            playwright-report/
+            test-results/
+            html-reports/
+          retention-days: 7
+
+  # Auto-merge if tests pass
+  auto-merge:
+    needs: [check-dependabot, test]
+    if: |
+      needs.check-dependabot.outputs.is-dependabot == 'true' && 
+      needs.test.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Enable auto-merge
+        run: |
+          gh pr merge ${{ github.event.pull_request.number }} --auto --squash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Comment on PR with results
+  comment:
+    needs: [check-dependabot, test]
+    if: always() && needs.check-dependabot.outputs.is-dependabot == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('🤖 **Dependabot Auto-Merge Status**')
+            );
+
+            let status = '';
+            let emoji = '';
+
+            if ('${{ needs.test.result }}' === 'success') {
+              status = '✅ All tests passed! This PR will be automatically merged.';
+              emoji = '🎉';
+            } else if ('${{ needs.test.result }}' === 'failure') {
+              status = '❌ Tests failed. This PR will not be automatically merged.';
+              emoji = '⚠️';
+            } else if ('${{ needs.test.result }}' === 'cancelled') {
+              status = '⏹️ Tests were cancelled.';
+              emoji = '⏹️';
+            } else {
+              status = '⏳ Tests are still running...';
+              emoji = '⏳';
+            }
+
+            const commentBody = `🤖 **Dependabot Auto-Merge Status** ${emoji}
+
+            ${status}
+
+            **Test Results:**
+            - ESLint: ${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }}
+            - TypeScript: ${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }}
+            - Playwright Tests: ${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }}
+
+            ---
+            *This is an automated message from the Dependabot Auto-Merge workflow.*`;
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+            }
+

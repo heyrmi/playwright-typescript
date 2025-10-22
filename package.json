@@ -3,7 +3,16 @@
   "description": "Playwright Framework with Typescript and playwright test runner",
   "version": "1.0.0",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "allureReport": "allure serve",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "npx playwright test",
+    "test:db": "npx playwright test db.test.ts --project=DB",
+    "test:visual": "npx playwright test visualComparision.test.ts --project=Chrome",
+    "lighthouse": "node tests/lighthouse/lighthouse.js",
+    "test:accessibility": "npx playwright test axe.test.ts --project=Chrome"
+  },
   "keywords": [],
   "repository": {
     "type": "git",
@@ -13,6 +22,7 @@
   "license": "MIT",
   "devDependencies": {
     "@axe-core/playwright": "^4.10.2",
+    "@eslint/js": "^9.38.0",
     "@playwright/test": "^1.56.1",
     "@types/crypto-js": "^4.2.2",
     "@types/node": "^24.9.1",
@@ -21,9 +31,12 @@
     "allure-playwright": "^3.4.1",
     "eslint": "^9.38.0",
     "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-playwright": "^2.2.2",
     "lighthouse": "^12.8.2",
     "ortoni-report": "^4.0.1",
-    "typescript": "^5.9.3"
+    "rimraf": "^6.0.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.2"
   },
   "dependencies": {
     "crypto-js": "^4.2.0",

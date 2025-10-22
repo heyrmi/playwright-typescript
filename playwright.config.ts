@@ -1,79 +1,187 @@
-import { defineConfig, devices } from '@playwright/test';
+import {devices, PlaywrightTestConfig} from '@playwright/test';
+import {OrtoniReportConfig} from 'ortoni-report';
+import {testConfig} from "@/testConfig";
 
-/**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
+// Get ENV value from command line or default to 'staging'
+const ENV = process.env.ENV || 'staging';
 
-/**
- * See https://playwright.dev/docs/test-configuration.
- */
-export default defineConfig({
-  testDir: './tests',
-  /* Run tests in files in parallel */
-  fullyParallel: true,
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
-  forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
-  use: {
-    /* Base URL to use in actions like `await page.goto('')`. */
-    // baseURL: 'http://localhost:3000',
+// Validate ENV value
+if (!ENV || !['staging', 'production'].includes(ENV)) {
+    console.log(`Invalid ENV value: ${ENV}. Allowed values are 'staging' or 'production'.`);
+    process.exit();
+}
 
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry',
-  },
+// HTML report config
+const reportConfig: OrtoniReportConfig = {
+    base64Image: true,
+    title: `Playwright E2E Test Report - ${ENV.toUpperCase()} Environment`,
+    showProject: true,
+    projectName: `E2E Tests - ${ENV}`,
+    authorName: 'Rahul Mishra',
+    folderPath: 'html-reports',
+    filename: `report-${ENV}.html`,
+    logo: 'ortoni-report/logo.png',
+    testType: 'E2E',
+    port: 3600,
+};
 
-  /* Configure projects for major browsers */
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
+// Playwright config
+const config: PlaywrightTestConfig = {
+    // global setup file (will remove logs, html-reports, allure-results folders)
+    globalSetup: './global-setup.ts',
 
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
+    // test timeouts (300 seconds = 5 minutes)
+    timeout: 300000,
 
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
+    // retries (0 = no retries)
+    retries: 0,
 
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
+    // reporter (HTML report)
+    reporter: [['./customReporterConfig.ts'], ['allure-playwright'], ['html', {
+        open: 'never',
+        outputFolder: reportConfig.folderPath
+    }], ['ortoni-report', reportConfig]],
 
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
-  ],
+    projects: [
+        {
+            name: 'chromium',
+            use: {
+                browserName: 'chromium',
+                // Chrome browser configuration
+                channel: 'chrome',
 
-  /* Run your local dev server before starting the tests */
-  // webServer: {
-  //   command: 'npm run start',
-  //   url: 'http://localhost:3000',
-  //   reuseExistingServer: !process.env.CI,
-  // },
-});
+                // TODO: make the url configurable based on ENV for now using only static value from testConfig
+                baseURL: testConfig.internet,
+                headless: false,
+                viewport: {width: 1920, height: 1080},
+                // To ignore SSL certificate errors (for self-signed certificates testing)
+                ignoreHTTPSErrors: true,
+                acceptDownloads: true,
+
+                // artefacts
+                video: 'retain-on-failure',
+                trace: 'retain-on-failure',
+                screenshot: 'only-on-failure',
+
+                launchOptions: {
+                    // Slow down the browser by ms for debugging purposes
+                    slowMo: 0,
+                    args: ['--start-maximized']
+                }
+            }
+        },
+        {
+            name: 'Chromium',
+            use: {
+                browserName: 'chromium',
+                baseURL: testConfig.internet,
+                headless: true,
+                viewport: {width: 1920, height: 1080},
+                ignoreHTTPSErrors: true,
+                acceptDownloads: true,
+                video: 'retain-on-failure',
+                trace: 'retain-on-failure',
+                screenshot: 'only-on-failure',
+                launchOptions: {
+                    slowMo: 0,
+                    args: ['--start-maximized']
+                }
+            }
+        },
+        {
+            name: 'Firefox',
+            use: {
+                browserName: 'firefox',
+                baseURL: testConfig.internet,
+                headless: false,
+                viewport: {width: 1920, height: 1080},
+                ignoreHTTPSErrors: true,
+                acceptDownloads: true,
+                video: 'retain-on-failure',
+                trace: 'retain-on-failure',
+                screenshot: 'only-on-failure',
+                launchOptions: {
+                    slowMo: 0,
+                }
+            }
+        },
+        {
+            name: 'Edge',
+            use: {
+                browserName: 'chromium',
+                channel: 'msedge',
+                baseURL: testConfig.internet,
+                headless: false,
+                viewport: {width: 1920, height: 1080},
+                ignoreHTTPSErrors: true,
+                acceptDownloads: true,
+                video: 'retain-on-failure',
+                trace: 'retain-on-failure',
+                screenshot: 'only-on-failure',
+                launchOptions: {
+                    slowMo: 0,
+                }
+            }
+        },
+        {
+            name: 'Webkit',
+            use: {
+                browserName: 'webkit',
+                baseURL: testConfig.internet,
+                headless: false,
+                viewport: {width: 1920, height: 1080},
+                ignoreHTTPSErrors: true,
+                acceptDownloads: true,
+                video: 'retain-on-failure',
+                trace: 'retain-on-failure',
+                screenshot: 'only-on-failure',
+                launchOptions: {
+                    slowMo: 0,
+                }
+            }
+        },
+        {
+            name: 'Mobile Chrome',
+            use: {
+                ...devices['Pixel 7'],
+                browserName: 'chromium',
+                channel: 'chrome',
+                baseURL: testConfig.internet,
+                headless: true,
+                ignoreHTTPSErrors: true,
+                acceptDownloads: true,
+                video: 'retain-on-failure',
+                trace: 'retain-on-failure',
+                screenshot: 'only-on-failure',
+                launchOptions: {
+                    slowMo: 0,
+                }
+            }
+        },
+        {
+            name: 'Mobile Safari',
+            use: {
+                ...devices['iPhone 15 Pro Max'],
+                browserName: 'webkit',
+                baseURL: testConfig.internet,
+                headless: true,
+                ignoreHTTPSErrors: true,
+                acceptDownloads: true,
+                video: 'retain-on-failure',
+                trace: 'retain-on-failure',
+                screenshot: 'only-on-failure',
+                launchOptions: {
+                    slowMo: 0,
+                }
+            }
+        },
+        {
+            name: 'API',
+            use: {
+                baseURL: testConfig['api'],
+            }
+        }
+    ]
+};
+
+export default config;
