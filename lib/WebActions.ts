@@ -1,8 +1,8 @@
-import {BrowserContext, Page} from '@playwright/test';
+import { BrowserContext, Page } from '@playwright/test';
 import CryptoJS from 'crypto-js';
-import {testConfig} from '@/testConfig';
+import { testConfig } from '@/testConfig';
 import fs from 'fs';
-import {Workbook} from 'exceljs';
+import { Workbook } from 'exceljs';
 
 export class WebActions {
     readonly page: Page;
@@ -18,7 +18,7 @@ export class WebActions {
     }
 
     async clickWithExactText(text: string): Promise<void> {
-        await this.page.getByText(text, {exact: true}).click();
+        await this.page.getByText(text, { exact: true }).click();
     }
 
     async clickElementWithJS(locator: string): Promise<void> {
