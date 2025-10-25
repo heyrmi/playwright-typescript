@@ -1,0 +1,33 @@
+{
+  "validUsers": [
+    {
+      "username": "tomsmith",
+      "password": "SuperSecretPassword!",
+      "description": "Valid test user for form authentication"
+    }
+  ],
+  "invalidUsers": [
+    {
+      "username": "invaliduser",
+      "password": "wrongpassword",
+      "description": "Invalid credentials for negative testing"
+    },
+    {
+      "username": "",
+      "password": "",
+      "description": "Empty credentials"
+    }
+  ],
+  "apiUsers": [
+    {
+      "email": "eve.holt@reqres.in",
+      "password": "pistol",
+      "description": "Valid user for ReqRes API registration"
+    },
+    {
+      "email": "eve.holt@reqres.in",
+      "password": "cityslicka",
+      "description": "Valid user for ReqRes API login"
+    }
+  ]
+}

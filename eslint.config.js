@@ -37,7 +37,7 @@ export default [
             ...playwright.configs['flat/recommended'].rules,
             // Override or add Playwright rules
             'playwright/no-wait-for-timeout': 'warn',
-            'playwright/expect-expect': 'error',
+            // 'playwright/expect-expect': 'error',s
             'playwright/no-element-handle': 'error',
             'playwright/no-eval': 'error',
             'playwright/no-focused-test': 'error',

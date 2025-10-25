@@ -1,6 +1,6 @@
-import {devices, PlaywrightTestConfig} from '@playwright/test';
-import {OrtoniReportConfig} from 'ortoni-report';
-import {testConfig} from "@/testConfig";
+import { devices, PlaywrightTestConfig } from '@playwright/test';
+import { OrtoniReportConfig } from 'ortoni-report';
+import { testConfig } from '@/testConfig';
 
 // Get ENV value from command line or default to 'staging'
 const ENV = process.env.ENV || 'staging';
@@ -44,39 +44,13 @@ const config: PlaywrightTestConfig = {
 
     projects: [
         {
-            name: 'chromium',
+            name: 'Chrome',
             use: {
                 browserName: 'chromium',
-                // Chrome browser configuration
                 channel: 'chrome',
-
-                // TODO: make the url configurable based on ENV for now using only static value from testConfig
                 baseURL: testConfig.internet,
-                headless: false,
-                viewport: {width: 1920, height: 1080},
-                // To ignore SSL certificate errors (for self-signed certificates testing)
-                ignoreHTTPSErrors: true,
-                acceptDownloads: true,
-
-                // artefacts
-                video: 'retain-on-failure',
-                trace: 'retain-on-failure',
-                screenshot: 'only-on-failure',
-
-                launchOptions: {
-                    // Slow down the browser by ms for debugging purposes
-                    slowMo: 0,
-                    args: ['--start-maximized']
-                }
-            }
-        },
-        {
-            name: 'Chromium',
-            use: {
-                browserName: 'chromium',
-                baseURL: testConfig.internet,
-                headless: true,
-                viewport: {width: 1920, height: 1080},
+                headless: process.env.CI ? true : false,
+                viewport: { width: 1920, height: 1080 },
                 ignoreHTTPSErrors: true,
                 acceptDownloads: true,
                 video: 'retain-on-failure',
@@ -94,7 +68,7 @@ const config: PlaywrightTestConfig = {
                 browserName: 'firefox',
                 baseURL: testConfig.internet,
                 headless: false,
-                viewport: {width: 1920, height: 1080},
+                viewport: { width: 1920, height: 1080 },
                 ignoreHTTPSErrors: true,
                 acceptDownloads: true,
                 video: 'retain-on-failure',
@@ -112,7 +86,7 @@ const config: PlaywrightTestConfig = {
                 channel: 'msedge',
                 baseURL: testConfig.internet,
                 headless: false,
-                viewport: {width: 1920, height: 1080},
+                viewport: { width: 1920, height: 1080 },
                 ignoreHTTPSErrors: true,
                 acceptDownloads: true,
                 video: 'retain-on-failure',
@@ -129,7 +103,7 @@ const config: PlaywrightTestConfig = {
                 browserName: 'webkit',
                 baseURL: testConfig.internet,
                 headless: false,
-                viewport: {width: 1920, height: 1080},
+                viewport: { width: 1920, height: 1080 },
                 ignoreHTTPSErrors: true,
                 acceptDownloads: true,
                 video: 'retain-on-failure',
@@ -178,7 +152,13 @@ const config: PlaywrightTestConfig = {
         {
             name: 'API',
             use: {
-                baseURL: testConfig['api'],
+                baseURL: testConfig.api,
+            }
+        },
+        {
+            name: 'DB',
+            use: {
+                // DB tests don't need browser configuration
             }
         }
     ]

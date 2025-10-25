@@ -1,26 +1,60 @@
-import {BrowserContext, Locator, Page} from '@playwright/test';
+import { BrowserContext, Locator, Page, expect } from '@playwright/test';
+import { testConfig } from '@/testConfig';
 
+/**
+ * Page Object for Basic Authentication Page
+ * Demonstrates handling HTTP Basic Authentication
+ */
 export class BasicAuthPage {
-    // URL
-    private readonly basicAuthUrl: string = 'https://admin:admin@the-internet.herokuapp.com';
-    private readonly basicAuthEndPoint: string = '/basic_auth';
+    private readonly basicAuthEndpoint: string = '/basic_auth';
 
-    // Page and context
     readonly page: Page;
     readonly context: BrowserContext;
 
     // Locators
-    readonly headerHeading: Locator;
+    readonly pageHeader: Locator;
+    readonly successMessage: Locator;
 
-    // Constructor
     constructor(page: Page, context: BrowserContext) {
         this.page = page;
         this.context = context;
-        this.headerHeading = page.locator('h3');
-
+        this.pageHeader = page.locator('h3');
+        this.successMessage = page.locator('.example p');
     }
 
-    async navigateToURL() {
-        await this.page.goto(this.basicAuthUrl + this.basicAuthEndPoint);
+    // Actions
+    async goto(): Promise<void> {
+        // Method 1: Using credentials in URL
+        const authUrl = `https://${testConfig.username}:${testConfig.password}@the-internet.herokuapp.com${this.basicAuthEndpoint}`;
+        await this.page.goto(authUrl);
+    }
+
+    async gotoWithContext(): Promise<void> {
+        // Method 2: Using browser context (more secure)
+        await this.context.setHTTPCredentials({
+            username: testConfig.username,
+            password: testConfig.password,
+        });
+        await this.page.goto(testConfig.internet + this.basicAuthEndpoint);
+    }
+
+    // Assertions
+    async expectPageHeaderToBeVisible(): Promise<void> {
+        await expect(this.pageHeader).toBeVisible();
+    }
+
+    async expectPageHeaderText(text: string): Promise<void> {
+        await expect(this.pageHeader).toHaveText(text);
+    }
+
+    async expectSuccessMessage(): Promise<void> {
+        await expect(this.successMessage).toBeVisible();
+        await expect(this.successMessage).toContainText('Congratulations');
+    }
+
+    async expectAuthenticationSuccess(): Promise<void> {
+        await this.expectPageHeaderToBeVisible();
+        await this.expectPageHeaderText('Basic Auth');
+        await this.expectSuccessMessage();
     }
 }

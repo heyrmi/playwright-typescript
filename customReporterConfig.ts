@@ -30,7 +30,7 @@ export default class CustomReporterConfig implements Reporter {
 
     onStepEnd(test: TestCase, result: TestResult, step: TestStep): void {
         if (step.category === 'test.step') {
-            logger.info('Step Completed: ${step.title}');
+            logger.info(`Step Completed: ${step.title}`);
         }
     }
 }
